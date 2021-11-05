@@ -3,24 +3,20 @@ import * as BooksAPI from './BooksAPI'
 import './App.css'
 import BookList from './components/BooksList'
 import AppHeader from './components/AppHeader'
-import AddBook from './components/AddBook'
+import AppContext from './store/AppContext'
+import { Route } from 'react-router-dom'
+import SearchBook from './components/search/SearchBook'
+import SearchButton from './components/SearchButton'
 
 class BooksApp extends React.Component {
   state = {
-    /**
-     * TODO: Instead of using this state variable to keep track of which page
-     * we're on, use the URL in the browser's address bar. This will ensure that
-     * users can use the browser's back and forward buttons to navigate between
-     * pages, as well as provide a good URL they can bookmark and share.
-     */
     books: [],
-    showSearchPage: false
+    bookShelfChangeHandler: () => { }
   }
 
   //Life cycle method that runs after component rendered to the DOM should handles any side effect code.
   componentDidMount = () => {
     //Calling getAll Api to get all books and initialize the screen with books
-
     BooksAPI.getAll().then((books) => {
       //Extracting used information only, to improve performance
       //Using map function to loop through every book in book list
@@ -29,42 +25,57 @@ class BooksApp extends React.Component {
       const minifiedBookList = books.map(({ id, authors, imageLinks, shelf, title, subtitle, publishedDate, printType }) => ({ id, authors, imageLinks, shelf, title, subtitle, publishedDate, printType }))
 
       //Setting books state to be able to render and re-render page content based on state and its changes.
-      this.setState((prevState) => ({ ...prevState, books: [...minifiedBookList] }))
+      //Setting bookshelf handler function to be able to change state based on user interations
+      this.setState((prevState) => ({ ...prevState, books: [...minifiedBookList], bookShelfChangeHandler: this.bookShelfChangeHandler }))
+    })
+  }
+
+  //Handling change of books shelf, the method must exists where its state exists
+  bookShelfChangeHandler = (e, vBook) => {
+    const { id: bookId } = vBook
+    const updatedShelf = e.target.value
+
+    //Changing the state based on book id and value selected
+    this.setState((prevState) => {
+      //Handling updating shelf of existing book in books application state
+      let bookFoundForUpdate = false
+      const updatedBooks = prevState.books.map(book => {
+        if (book.id === bookId) {
+          bookFoundForUpdate = true
+          book.shelf = updatedShelf
+
+          //persisting information by calling save api
+          BooksAPI.update(book, updatedShelf)
+        }
+        return book
+      })
+
+      if (bookFoundForUpdate) {
+        return { ...prevState, books: updatedBooks }
+      } else {
+        //Adding book to books list
+        //persisting information by calling book shelf save api
+        BooksAPI.update(vBook, updatedShelf)
+
+        return { ...prevState, books: [...prevState.books, { ...vBook, shelf: updatedShelf }] }
+      }
     })
   }
 
   render() {
     return (
-      <div className="app">
-        {this.state.showSearchPage ? (
-          <div className="search-books">
-            <div className="search-books-bar">
-              <button className="close-search" onClick={() => this.setState({ showSearchPage: false })}>Close</button>
-              <div className="search-books-input-wrapper">
-                {/*
-                  NOTES: The search from BooksAPI is limited to a particular set of search terms.
-                  You can find these search terms here:
-                  https://github.com/udacity/reactnd-project-myreads-starter/blob/master/SEARCH_TERMS.md
-
-                  However, remember that the BooksAPI.search method DOES search by title or author. So, don't worry if
-                  you don't find a specific author or title. Every search is limited by search terms.
-                */}
-                <input type="text" placeholder="Search by title or author" />
-
-              </div>
-            </div>
-            <div className="search-books-results">
-              <ol className="books-grid"></ol>
-            </div>
-          </div>
-        ) : (
-          <>
+      <AppContext.Provider value={this.state}>
+        <Route path="/" exact>
+          <div className="app">
             <AppHeader />
             <BookList />
-            <AddBook />
-          </>
-        )}
-      </div>
+            <SearchButton />
+          </div>
+        </Route>
+        <Route path="/search">
+          <SearchBook appBooks={this.state.books} bookShelfChangeHandler={this.bookShelfChangeHandler} />
+        </Route>
+      </AppContext.Provider>
     )
   }
 }
