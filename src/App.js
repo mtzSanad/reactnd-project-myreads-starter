@@ -48,7 +48,7 @@ class BooksApp extends React.Component {
           BooksAPI.update(book, updatedShelf)
         }
         return book
-      })
+      }).filter(book => book.shelf !== 'none') //Removing book from application state in case it was selected to be none, to improve performance
 
       if (bookFoundForUpdate) {
         return { ...prevState, books: updatedBooks }
@@ -63,6 +63,7 @@ class BooksApp extends React.Component {
   }
 
   render() {
+    console.log(this.state)
     return (
       <AppContext.Provider value={this.state}>
         <Route path="/" exact>
