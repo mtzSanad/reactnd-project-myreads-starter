@@ -43,9 +43,9 @@ class SearchBook extends Component {
 
     updateBooksShelfToMatchAppState = (books) => {
         books && books.forEach(book => {
+            //Setting default shelf to none
+            book.shelf = 'none'
             this.props.appBooks && this.props.appBooks.forEach(appBook => {
-                //Setting default shelf to none
-                book.shelf = 'none'
                 if (appBook.id === book.id) {
                     book.shelf = appBook.shelf
                 }
