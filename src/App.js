@@ -63,7 +63,6 @@ class BooksApp extends React.Component {
   }
 
   render() {
-    console.log(this.state)
     return (
       <AppContext.Provider value={this.state}>
         <Route path="/" exact>
